@@ -1,247 +1,230 @@
-local UiSource = {}
+--// Sodium UI Library by Nuzi
+
+local library = {}
 
 local Themes = {
-    Black = {
+    ["Black"] = {
         Background = Color3.fromRGB(25, 25, 25),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(255, 0, 0),
+        Content = Color3.fromRGB(35, 35, 35),
+        Text = Color3.fromRGB(232, 232, 232),
+        Accent = Color3.fromRGB(60, 60, 60)
     },
-    White = {
+    ["White"] = {
         Background = Color3.fromRGB(245, 245, 245),
-        Text = Color3.fromRGB(0, 0, 0),
-        Accent = Color3.fromRGB(255, 0, 0),
+        Content = Color3.fromRGB(255, 255, 255),
+        Text = Color3.fromRGB(20, 20, 20),
+        Accent = Color3.fromRGB(220, 220, 220)
     },
-    Red = {
-        Background = Color3.fromRGB(30, 0, 0),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(255, 0, 0),
+    ["Red"] = {
+        Background = Color3.fromRGB(40, 0, 0),
+        Content = Color3.fromRGB(60, 0, 0),
+        Text = Color3.fromRGB(255, 100, 100),
+        Accent = Color3.fromRGB(180, 0, 0)
     },
-    Green = {
-        Background = Color3.fromRGB(0, 30, 0),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(0, 255, 0),
+    ["Green"] = {
+        Background = Color3.fromRGB(0, 40, 0),
+        Content = Color3.fromRGB(0, 60, 0),
+        Text = Color3.fromRGB(100, 255, 100),
+        Accent = Color3.fromRGB(0, 180, 0)
     },
-    Blue = {
-        Background = Color3.fromRGB(0, 0, 30),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(0, 150, 255),
+    ["Blue"] = {
+        Background = Color3.fromRGB(0, 0, 40),
+        Content = Color3.fromRGB(0, 0, 60),
+        Text = Color3.fromRGB(100, 100, 255),
+        Accent = Color3.fromRGB(0, 0, 180)
     },
-    Purple = {
-        Background = Color3.fromRGB(20, 0, 30),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(150, 0, 255),
-    },
+    ["Purple"] = {
+        Background = Color3.fromRGB(25, 0, 40),
+        Content = Color3.fromRGB(35, 0, 60),
+        Text = Color3.fromRGB(200, 150, 255),
+        Accent = Color3.fromRGB(150, 0, 255)
+    }
 }
 
-local function createBasicInstance(class, props)
-    local inst = Instance.new(class)
-    for k, v in pairs(props or {}) do
-        inst[k] = v
+function library.SetupUI(opts)
+    opts = opts or {}
+    local theme = Themes[opts.Theme or "Black"]
+
+    local ui = {}
+    local gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    gui.ResetOnSpawn = false
+    gui.Name = "SodiumUi"
+
+    local main = Instance.new("Frame", gui)
+    main.BackgroundColor3 = theme.Background
+    main.Size = UDim2.new(0, 400, 0, 450)
+    main.Position = UDim2.new(0.5, -200, 0.5, -225)
+    main.AnchorPoint = Vector2.new(0.5, 0.5)
+    main.Active = true
+    main.Draggable = true
+
+    local title = Instance.new("TextLabel", main)
+    title.Text = opts.Title or "UI"
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundTransparency = 1
+    title.TextColor3 = theme.Text
+    title.Font = Enum.Font.GothamBold
+    title.TextScaled = true
+
+    local tabHolder = Instance.new("Frame", main)
+    tabHolder.Size = UDim2.new(1, 0, 1, -40)
+    tabHolder.Position = UDim2.new(0, 0, 0, 40)
+    tabHolder.BackgroundColor3 = theme.Content
+    tabHolder.BorderSizePixel = 0
+
+    local layout = Instance.new("UIListLayout", tabHolder)
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    function ui.CreateTabs(tabOpts)
+        tabOpts = tabOpts or {}
+
+        local tab = {}
+
+        local tabFrame = Instance.new("Frame", tabHolder)
+        tabFrame.Size = UDim2.new(1, -20, 0, 300)
+        tabFrame.BackgroundTransparency = 1
+        tabFrame.LayoutOrder = 1
+
+        local innerLayout = Instance.new("UIListLayout", tabFrame)
+        innerLayout.Padding = UDim.new(0, 8)
+        innerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+        function tab.CreateLabel(text, align)
+            local lbl = Instance.new("TextLabel", tabFrame)
+            lbl.Size = UDim2.new(1, -10, 0, 20)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = text
+            lbl.TextColor3 = theme.Text
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 14
+            lbl.TextXAlignment = align or Enum.TextXAlignment.Left
+        end
+
+        function tab.CreateButton(opts)
+            local btn = Instance.new("TextButton", tabFrame)
+            btn.Size = UDim2.new(1, -10, 0, 30)
+            btn.BackgroundColor3 = theme.Accent
+            btn.Text = opts.Text or "Button"
+            btn.TextColor3 = theme.Text
+            btn.Font = Enum.Font.Gotham
+            btn.TextScaled = true
+            btn.MouseButton1Click:Connect(function()
+                pcall(opts.Callback)
+            end)
+        end
+
+        function tab.CreateToggle(opts)
+            local toggle = false
+            local btn = Instance.new("TextButton", tabFrame)
+            btn.Size = UDim2.new(1, -10, 0, 30)
+            btn.BackgroundColor3 = theme.Accent
+            btn.Text = "[ ] " .. (opts.Text or "Toggle")
+            btn.TextColor3 = theme.Text
+            btn.Font = Enum.Font.Gotham
+            btn.TextScaled = true
+            btn.MouseButton1Click:Connect(function()
+                toggle = not toggle
+                btn.Text = (toggle and "[x] " or "[ ] ") .. (opts.Text or "Toggle")
+                pcall(opts.Callback, toggle)
+            end)
+        end
+
+        function tab.CreateSlider(opts)
+            local label = Instance.new("TextLabel", tabFrame)
+            label.Size = UDim2.new(1, -10, 0, 20)
+            label.BackgroundTransparency = 1
+            label.Text = tostring(opts.Default or 0)
+            label.TextColor3 = theme.Text
+            label.Font = Enum.Font.Gotham
+            label.TextScaled = true
+
+            local bar = Instance.new("TextButton", tabFrame)
+            bar.Size = UDim2.new(1, -10, 0, 20)
+            bar.BackgroundColor3 = theme.Accent
+            bar.Text = ""
+            local dragging = false
+
+            bar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                end
+            end)
+            bar.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end)
+
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local rel = input.Position.X - bar.AbsolutePosition.X
+                    local pct = math.clamp(rel / bar.AbsoluteSize.X, 0, 1)
+                    local val = opts.Minimum + (opts.Maximum - opts.Minimum) * pct
+                    val = opts.Precise and tonumber(string.format("%.2f", val)) or math.floor(val)
+                    label.Text = tostring(val)
+                    pcall(opts.Callback, val)
+                end
+            end)
+        end
+
+        function tab.CreateTextbox(opts)
+            local box = Instance.new("TextBox", tabFrame)
+            box.Size = UDim2.new(1, -10, 0, 25)
+            box.PlaceholderText = opts.Placeholder or "Type here..."
+            box.Text = ""
+            box.Font = Enum.Font.Gotham
+            box.TextColor3 = theme.Text
+            box.BackgroundColor3 = theme.Accent
+            box.FocusLost:Connect(function(enter)
+                if enter then
+                    pcall(opts.Callback, box.Text)
+                end
+            end)
+        end
+
+        function tab.CreateKeyblind(opts)
+            local keyBtn = Instance.new("TextButton", tabFrame)
+            keyBtn.Size = UDim2.new(1, -10, 0, 25)
+            keyBtn.BackgroundColor3 = theme.Accent
+            keyBtn.Text = "Press a Key"
+            keyBtn.TextColor3 = theme.Text
+            keyBtn.Font = Enum.Font.Gotham
+            keyBtn.TextScaled = true
+
+            keyBtn.MouseButton1Click:Connect(function()
+                keyBtn.Text = "..."
+                local conn
+                conn = game:GetService("UserInputService").InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        keyBtn.Text = input.KeyCode.Name
+                        conn:Disconnect()
+                        pcall(opts.Callback, input.KeyCode)
+                    end
+                end)
+            end)
+        end
+
+        function tab.CreateColorPicker(opts)
+            local picker = Instance.new("TextButton", tabFrame)
+            picker.Size = UDim2.new(1, -10, 0, 25)
+            picker.BackgroundColor3 = opts.Default or Color3.fromRGB(255, 0, 0)
+            picker.Text = opts.Text or "Color"
+            picker.TextColor3 = theme.Text
+            picker.Font = Enum.Font.Gotham
+            picker.TextScaled = true
+
+            picker.MouseButton1Click:Connect(function()
+                local color = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
+                picker.BackgroundColor3 = color
+                pcall(opts.Callback, color)
+            end)
+        end
+
+        return tab
     end
-    return inst
+
+    return ui
 end
 
-function UiSource.SetupUI(config)
-    local themeName = config.Theme or "Red"
-    local Theme = Themes[themeName] or Themes.Red
-
-    local screenGui = createBasicInstance("ScreenGui", {
-        Name = "CustomUi",
-        Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"),
-        ResetOnSpawn = false,
-    })
-
-    local main = createBasicInstance("Frame", {
-        Name = "Main",
-        Parent = screenGui,
-        Size = UDim2.new(0, 400, 0, 450),
-        Position = UDim2.new(0.5, -200, 0.5, -225),
-        BackgroundColor3 = Theme.Background,
-        BorderSizePixel = 0,
-        Active = true,
-        Draggable = true
-    })
-
-    local topBar = createBasicInstance("Frame", {
-        Parent = main,
-        Size = UDim2.new(1, 0, 0, 5),
-        BackgroundColor3 = Theme.Accent
-    })
-
-    local title = createBasicInstance("TextLabel", {
-        Parent = main,
-        Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 0, 0, 5),
-        BackgroundTransparency = 1,
-        Text = config.Title or "Ui Title",
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 20,
-        TextColor3 = Theme.Text
-    })
-
-    local tabHolder = createBasicInstance("Frame", {
-        Parent = main,
-        Size = UDim2.new(1, -20, 1, -40),
-        Position = UDim2.new(0, 10, 0, 35),
-        BackgroundTransparency = 1
-    })
-
-    local currentTheme = themeName
-    local components = {}
-
-    local function applyTheme()
-        local newTheme = Themes[currentTheme]
-        main.BackgroundColor3 = newTheme.Background
-        topBar.BackgroundColor3 = newTheme.Accent
-        title.TextColor3 = newTheme.Text
-        for _, v in pairs(components) do
-            if v:IsA("TextButton") or v:IsA("TextBox") then
-                v.BackgroundColor3 = newTheme.Accent
-                v.TextColor3 = newTheme.Text
-            elseif v:IsA("TextLabel") then
-                v.TextColor3 = newTheme.Text
-            end
-        end
-    end
-
-    local function CreateComponent(obj)
-        table.insert(components, obj)
-        return obj
-    end
-
-    return {
-        SetTheme = function(self, newTheme)
-            if Themes[newTheme] then
-                currentTheme = newTheme
-                applyTheme()
-            end
-        end,
-
-        CreateTabs = function(tabConfig)
-            local tab = {}
-
-            function tab.CreateLabel(text, alignment)
-                CreateComponent(createBasicInstance("TextLabel", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 25),
-                    BackgroundTransparency = 1,
-                    Text = text,
-                    TextXAlignment = alignment,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18,
-                    TextColor3 = Theme.Text
-                }))
-            end
-
-            function tab.CreateButtons(config)
-                local btn = CreateComponent(createBasicInstance("TextButton", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    Text = config.Text or "Button",
-                    BackgroundColor3 = Theme.Accent,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                btn.MouseButton1Click:Connect(config.Callback)
-            end
-
-            function tab.CreateToggle(config)
-                local toggle = false
-                local btn = CreateComponent(createBasicInstance("TextButton", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    Text = "[ ] " .. config.Text,
-                    BackgroundColor3 = Theme.Accent,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                btn.MouseButton1Click:Connect(function()
-                    toggle = not toggle
-                    btn.Text = (toggle and "[X] " or "[ ] ") .. config.Text
-                    config.Callback(toggle)
-                end)
-            end
-
-            function tab.CreateSlider(config)
-                local slider = CreateComponent(createBasicInstance("TextButton", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    Text = config.Text .. ": " .. tostring(config.Default),
-                    BackgroundColor3 = Theme.Accent,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                local val = config.Default
-                slider.MouseButton1Click:Connect(function()
-                    val = val + 0.1
-                    if val > config.Maximum then val = config.Minimum end
-                    local display = config.Precise and string.format("%.2f", val) or tostring(math.floor(val))
-                    slider.Text = config.Text .. ": " .. display
-                    config.Callback(val)
-                end)
-            end
-
-            function tab.CreateTextbox(config)
-                local box = CreateComponent(createBasicInstance("TextBox", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    PlaceholderText = config.Placeholder or "",
-                    BackgroundColor3 = Theme.Accent,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                box.FocusLost:Connect(function()
-                    config.Callback(box.Text)
-                end)
-            end
-
-            function tab.CreateKeyblind(config)
-                local btn = CreateComponent(createBasicInstance("TextButton", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    Text = config.Text .. ": " .. config.Default.Name,
-                    BackgroundColor3 = Theme.Accent,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                btn.MouseButton1Click:Connect(function()
-                    btn.Text = config.Text .. ": ..."
-                    local conn
-                    conn = game:GetService("UserInputService").InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.Keyboard then
-                            btn.Text = config.Text .. ": " .. input.KeyCode.Name
-                            config.Callback(input.KeyCode)
-                            conn:Disconnect()
-                        end
-                    end)
-                end)
-            end
-
-            function tab.CreateColorPicker(config)
-                local btn = CreateComponent(createBasicInstance("TextButton", {
-                    Parent = tabHolder,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    Text = config.Text,
-                    BackgroundColor3 = config.Default,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 18
-                }))
-                btn.MouseButton1Click:Connect(function()
-                    local newColor = Color3.new(math.random(), math.random(), math.random())
-                    btn.BackgroundColor3 = newColor
-                    config.Callback(newColor)
-                end)
-            end
-
-            return tab
-        end
-    }
-end
-
-return UiSource
+return library
