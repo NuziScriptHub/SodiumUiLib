@@ -1,0 +1,247 @@
+local UiSource = {}
+
+local Themes = {
+    Black = {
+        Background = Color3.fromRGB(25, 25, 25),
+        Text = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(255, 0, 0),
+    },
+    White = {
+        Background = Color3.fromRGB(245, 245, 245),
+        Text = Color3.fromRGB(0, 0, 0),
+        Accent = Color3.fromRGB(255, 0, 0),
+    },
+    Red = {
+        Background = Color3.fromRGB(30, 0, 0),
+        Text = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(255, 0, 0),
+    },
+    Green = {
+        Background = Color3.fromRGB(0, 30, 0),
+        Text = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(0, 255, 0),
+    },
+    Blue = {
+        Background = Color3.fromRGB(0, 0, 30),
+        Text = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(0, 150, 255),
+    },
+    Purple = {
+        Background = Color3.fromRGB(20, 0, 30),
+        Text = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(150, 0, 255),
+    },
+}
+
+local function createBasicInstance(class, props)
+    local inst = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        inst[k] = v
+    end
+    return inst
+end
+
+function UiSource.SetupUI(config)
+    local themeName = config.Theme or "Red"
+    local Theme = Themes[themeName] or Themes.Red
+
+    local screenGui = createBasicInstance("ScreenGui", {
+        Name = "CustomUi",
+        Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"),
+        ResetOnSpawn = false,
+    })
+
+    local main = createBasicInstance("Frame", {
+        Name = "Main",
+        Parent = screenGui,
+        Size = UDim2.new(0, 400, 0, 450),
+        Position = UDim2.new(0.5, -200, 0.5, -225),
+        BackgroundColor3 = Theme.Background,
+        BorderSizePixel = 0,
+        Active = true,
+        Draggable = true
+    })
+
+    local topBar = createBasicInstance("Frame", {
+        Parent = main,
+        Size = UDim2.new(1, 0, 0, 5),
+        BackgroundColor3 = Theme.Accent
+    })
+
+    local title = createBasicInstance("TextLabel", {
+        Parent = main,
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 5),
+        BackgroundTransparency = 1,
+        Text = config.Title or "Ui Title",
+        Font = Enum.Font.SourceSansBold,
+        TextSize = 20,
+        TextColor3 = Theme.Text
+    })
+
+    local tabHolder = createBasicInstance("Frame", {
+        Parent = main,
+        Size = UDim2.new(1, -20, 1, -40),
+        Position = UDim2.new(0, 10, 0, 35),
+        BackgroundTransparency = 1
+    })
+
+    local currentTheme = themeName
+    local components = {}
+
+    local function applyTheme()
+        local newTheme = Themes[currentTheme]
+        main.BackgroundColor3 = newTheme.Background
+        topBar.BackgroundColor3 = newTheme.Accent
+        title.TextColor3 = newTheme.Text
+        for _, v in pairs(components) do
+            if v:IsA("TextButton") or v:IsA("TextBox") then
+                v.BackgroundColor3 = newTheme.Accent
+                v.TextColor3 = newTheme.Text
+            elseif v:IsA("TextLabel") then
+                v.TextColor3 = newTheme.Text
+            end
+        end
+    end
+
+    local function CreateComponent(obj)
+        table.insert(components, obj)
+        return obj
+    end
+
+    return {
+        SetTheme = function(self, newTheme)
+            if Themes[newTheme] then
+                currentTheme = newTheme
+                applyTheme()
+            end
+        end,
+
+        CreateTabs = function(tabConfig)
+            local tab = {}
+
+            function tab.CreateLabel(text, alignment)
+                CreateComponent(createBasicInstance("TextLabel", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 25),
+                    BackgroundTransparency = 1,
+                    Text = text,
+                    TextXAlignment = alignment,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18,
+                    TextColor3 = Theme.Text
+                }))
+            end
+
+            function tab.CreateButtons(config)
+                local btn = CreateComponent(createBasicInstance("TextButton", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    Text = config.Text or "Button",
+                    BackgroundColor3 = Theme.Accent,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                btn.MouseButton1Click:Connect(config.Callback)
+            end
+
+            function tab.CreateToggle(config)
+                local toggle = false
+                local btn = CreateComponent(createBasicInstance("TextButton", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    Text = "[ ] " .. config.Text,
+                    BackgroundColor3 = Theme.Accent,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                btn.MouseButton1Click:Connect(function()
+                    toggle = not toggle
+                    btn.Text = (toggle and "[X] " or "[ ] ") .. config.Text
+                    config.Callback(toggle)
+                end)
+            end
+
+            function tab.CreateSlider(config)
+                local slider = CreateComponent(createBasicInstance("TextButton", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    Text = config.Text .. ": " .. tostring(config.Default),
+                    BackgroundColor3 = Theme.Accent,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                local val = config.Default
+                slider.MouseButton1Click:Connect(function()
+                    val = val + 0.1
+                    if val > config.Maximum then val = config.Minimum end
+                    local display = config.Precise and string.format("%.2f", val) or tostring(math.floor(val))
+                    slider.Text = config.Text .. ": " .. display
+                    config.Callback(val)
+                end)
+            end
+
+            function tab.CreateTextbox(config)
+                local box = CreateComponent(createBasicInstance("TextBox", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    PlaceholderText = config.Placeholder or "",
+                    BackgroundColor3 = Theme.Accent,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                box.FocusLost:Connect(function()
+                    config.Callback(box.Text)
+                end)
+            end
+
+            function tab.CreateKeyblind(config)
+                local btn = CreateComponent(createBasicInstance("TextButton", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    Text = config.Text .. ": " .. config.Default.Name,
+                    BackgroundColor3 = Theme.Accent,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                btn.MouseButton1Click:Connect(function()
+                    btn.Text = config.Text .. ": ..."
+                    local conn
+                    conn = game:GetService("UserInputService").InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.Keyboard then
+                            btn.Text = config.Text .. ": " .. input.KeyCode.Name
+                            config.Callback(input.KeyCode)
+                            conn:Disconnect()
+                        end
+                    end)
+                end)
+            end
+
+            function tab.CreateColorPicker(config)
+                local btn = CreateComponent(createBasicInstance("TextButton", {
+                    Parent = tabHolder,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    Text = config.Text,
+                    BackgroundColor3 = config.Default,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.SourceSans,
+                    TextSize = 18
+                }))
+                btn.MouseButton1Click:Connect(function()
+                    local newColor = Color3.new(math.random(), math.random(), math.random())
+                    btn.BackgroundColor3 = newColor
+                    config.Callback(newColor)
+                end)
+            end
+
+            return tab
+        end
+    }
+end
+
+return UiSource
